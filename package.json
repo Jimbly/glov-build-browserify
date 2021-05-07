@@ -1,0 +1,26 @@
+{
+  "name": "glov-build-browserify",
+  "version": "0.0.1",
+  "description": "Browserify task processor for glov-build",
+  "main": "index.js",
+  "keywords": [
+    "glov-build",
+    "glov",
+    "glovjs",
+    "browserify"
+  ],
+  "author": "Jimb Esser (https://github.com/Jimbly)",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Jimbly/glov-build-browserify.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "browserify": "^16.5.1",
+    "glov-build-sourcemap": "0.0.2"
+  },
+  "devDependencies": {},
+  "peerDependencies": {
+    "glov-build": ">= 0.0.16"
+  }
+}
