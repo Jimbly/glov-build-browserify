@@ -10,6 +10,9 @@
     "browserify"
   ],
   "author": "Jimb Esser (https://github.com/Jimbly)",
+  "scripts": {
+    "test": "nodemon -w build -w test/*.js test/test.js"
+  },
   "repository": {
     "type": "git",
     "url": "git@github.com:Jimbly/glov-build-browserify.git"
@@ -19,7 +22,16 @@
     "browserify": "^16.5.1",
     "glov-build-sourcemap": "0.0.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.14.2",
+    "@babel/preset-env": "^7.14.2",
+    "glov-async": "0.0.1",
+    "glov-build": "0.0.20",
+    "glov-build-babel": "0.0.1",
+    "nodemon": "^2.0.7",
+    "recursive-readdir-synchronous": "0.0.4",
+    "rimraf": "^3.0.2"
+  },
   "peerDependencies": {
     "glov-build": ">= 0.0.16"
   }
