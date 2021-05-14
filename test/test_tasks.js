@@ -55,7 +55,7 @@ exports.registerTasks = function () {
       out: 'main.bundle.js',
       browserify: {
         transform: [],
-        bundleExternal: false,
+        bundleExternal: true,
       },
       // eslint-disable-next-line arrow-body-style
       post_bundle_cb: (buf) => {

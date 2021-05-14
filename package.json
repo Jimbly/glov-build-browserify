@@ -1,6 +1,6 @@
 {
   "name": "glov-build-browserify",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Browserify task processor for glov-build",
   "main": "index.js",
   "keywords": [
@@ -11,7 +11,7 @@
   ],
   "author": "Jimb Esser (https://github.com/Jimbly)",
   "scripts": {
-    "test": "nodemon -w build -w test/*.js test/test.js"
+    "test": "nodemon -w index.js -w test/*.js test/test.js"
   },
   "repository": {
     "type": "git",
@@ -19,20 +19,21 @@
   },
   "license": "MIT",
   "dependencies": {
-    "browserify": "^16.5.1",
+    "@jimbly/browserify": "^0.17.0",
     "glov-build-sourcemap": "0.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.14.2",
     "@babel/preset-env": "^7.14.2",
     "glov-async": "0.0.1",
-    "glov-build": "0.0.20",
+    "glov-build": "0.0.21",
     "glov-build-babel": "0.0.1",
+    "is-finite": "^1.0.0",
     "nodemon": "^2.0.7",
     "recursive-readdir-synchronous": "0.0.4",
     "rimraf": "^3.0.2"
   },
   "peerDependencies": {
-    "glov-build": ">= 0.0.16"
+    "glov-build": ">= 0.0.21"
   }
 }

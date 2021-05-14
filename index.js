@@ -1,4 +1,5 @@
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const sourcemap = require('glov-build-sourcemap');
 // const through = require('through2');
@@ -25,7 +26,7 @@ module.exports = function bundle(opts) {
 
   let browserify;
   function bundleTaskInit(next) {
-    browserify = require('browserify'); // eslint-disable-line global-require
+    browserify = require('@jimbly/browserify'); // eslint-disable-line global-require
     if (browserify_opts.transform) {
       browserify_opts.transform.forEach((row) => {
         if (typeof row[0] === 'string') {
@@ -49,10 +50,6 @@ module.exports = function bundle(opts) {
   ) {
     let user_data = job.getUserData();
     let { base_path, cache } = user_data;
-    if (!base_path) {
-      base_path = job.getFile().getBucketDir();
-      user_data.base_path = base_path;
-    }
     let relative = forwardSlashes(path.relative(base_path, file_name));
     // TODO: if outside of our base, or node_modules, just do simple caching and/or just pass it to `fallback`?
     let key = `${source}:${relative}`;
@@ -87,6 +84,76 @@ module.exports = function bundle(opts) {
     });
   }
 
+  function resolveOpts(job, base_path) {
+    return {
+      readFile: function readFile(file_name, cb) {
+        file_name = forwardSlashes(file_name);
+        assert(file_name.endsWith('package.json')); // This is the only file that should be read by `resolve`?
+        if (file_name.startsWith(base_path)) {
+          // A file in our source directory, get it from the build system and
+          // add it as a dependency, even if it does not (yet) exist.
+          let relative = forwardSlashes(path.relative(base_path, file_name));
+          let key = `${source}:${relative}`;
+          return job.depAdd(key, function (err, buildfile) {
+            cb(err, buildfile.contents);
+          });
+        }
+        // Outside of the build directories (node_modules dependency) - just hit
+        //   the disk, will not get dynamic reprocessing if it changes
+        fs.readFile(file_name, cb);
+      },
+      isFile: function isFile(file_name, cb) {
+        file_name = forwardSlashes(file_name);
+        if (file_name.startsWith(base_path)) {
+          // A file in our source directory, get it from the build system and
+          // add it as a dependency, even if it does not (yet) exist.
+          let relative = forwardSlashes(path.relative(base_path, file_name));
+          let key = `${source}:${relative}`;
+          return job.depAdd(key, function (err, buildfile) {
+            cb(null, !err);
+          });
+        }
+        if (file_name.startsWith(job.gb.config.statedir)) {
+          // Inside our state dir, but not our source; block
+          return cb(null, false);
+        }
+        if (file_name.indexOf('/node_modules') === -1) {
+          // Not in the node_modules folder, shouldn't be of interest or accessing this
+          return cb(null, false);
+        }
+        // Outside of the build directories (node_modules dependency) - just hit
+        //   the disk, will not get dynamic reprocessing if it changes
+        fs.stat(file_name, function (err, stat) {
+          if (!err) {
+            return cb(null, stat.isFile() || stat.isFIFO());
+          }
+          if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+            return cb(null, false);
+          }
+          return cb(err);
+        });
+      },
+      isDirectory: function isDirectory(file_name, cb) {
+        file_name = forwardSlashes(file_name);
+        // This is only called for finding the node_modules folder?
+        assert(file_name.indexOf('/node_modules') !== -1);
+        if (file_name.startsWith(job.gb.config.statedir)) {
+          // Inside our state dir
+          return cb(null, false);
+        }
+        fs.stat(file_name, function (err, stat) {
+          if (!err) {
+            return cb(null, stat.isDirectory());
+          }
+          if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+            return cb(null, false);
+          }
+          return cb(err);
+        });
+      },
+    };
+  }
+
   function bundleTask(job, done) {
     let user_data = job.getUserData();
     let { b, cache } = user_data;
@@ -94,11 +161,13 @@ module.exports = function bundle(opts) {
     if (!b) {
       cache = {};
       user_data.cache = cache;
-
+      let base_path = the_file.getBucketDir();
+      user_data.base_path = base_path;
       browserify_opts.persistentCache = persistentCache.bind(null, job);
 
       let disk_path = the_file.getDiskPath();
       browserify_opts.basedir = path.dirname(disk_path);
+      browserify_opts.resolve = resolveOpts(job, base_path);
       b = browserify(disk_path, browserify_opts);
       user_data.b = b;
       b.on('log', job.log.bind(job)); // output build logs to terminal
