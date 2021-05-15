@@ -53,23 +53,39 @@ module.exports = function bundle(opts) {
     let relative = forwardSlashes(path.relative(base_path, file_name));
     // TODO: if outside of our base, or node_modules, just do simple caching and/or just pass it to `fallback`?
     let key = `${source}:${relative}`;
-    if (cache[key]) {
-      return void cb(null, cache[key]);
+    let cache_entry = cache[key];
+    if (cache_entry) {
+      if (cache_entry.cbs) {
+        cache_entry.cbs.push(cb);
+      } else {
+        cb(cache_entry.err, cache_entry.data);
+      }
+      return;
     }
     if (!user_data.job_in_progress) {
       return void cb('Job already completed');
     }
     // TODO: when/how do we reset or remove deps?  Bundle will grow until build task is restarted, otherwise
+    cache_entry = {
+      cbs: [cb],
+    };
+    cache[key] = cache_entry;
+    function handleResult(err, data) {
+      let cbs = cache_entry.cbs;
+      cache_entry.err = err;
+      cache_entry.data = data;
+      cache_entry.cbs = null;
+      for (let ii = 0; ii < cbs.length; ++ii) {
+        cbs[ii](cache_entry.err, cache_entry.data);
+      }
+    }
     job.depAdd(key, function (err, buildfile) {
       assert.equal(buildfile.key, key);
       if (err) {
-        return void cb(err);
+        return void handleResult(err);
       }
 
       fallback(buildfile.contents.toString(), function (error, cacheableEntry) {
-        if (error) {
-          return void cb(error);
-        }
         // cacheableEntry = {
         //   source: buildfile.contents.toString(),
         //   package: pkg, // The package for housekeeping
@@ -78,8 +94,7 @@ module.exports = function bundle(opts) {
         //       'file' // file path to the required file
         //   }
         // }
-        cache[key] = cacheableEntry;
-        cb(null, cacheableEntry);
+        return void handleResult(error, cacheableEntry);
       });
     });
   }
