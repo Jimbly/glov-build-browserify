@@ -29,7 +29,7 @@ exports.registerTasks = function () {
 
   gb.task({
     name: 'babel',
-    input: '*.js',
+    input: '**/*.js',
     ...babel({
       sourcemap: {
         inline: true,
@@ -50,9 +50,9 @@ exports.registerTasks = function () {
     name: 'bundle',
     target: 'dev',
     ...glov_build_browserify({
-      entrypoint: 'main.js',
+      entrypoint: 'client/main.js',
       source: 'babel',
-      out: 'main.bundle.js',
+      out: 'client/main.bundle.js',
       browserify: {
         transform: [],
         bundleExternal: true,
