@@ -102,6 +102,9 @@ module.exports = function bundle(opts) {
   function resolveOpts(job, base_path) {
     return {
       readFile: function readFile(file_name, cb) {
+        if (!job.getUserData().job_in_progress) {
+          return void cb('Job already completed');
+        }
         file_name = forwardSlashes(file_name);
         assert(file_name.endsWith('package.json')); // This is the only file that should be read by `resolve`?
         if (file_name.startsWith(base_path)) {
@@ -118,6 +121,9 @@ module.exports = function bundle(opts) {
         fs.readFile(file_name, cb);
       },
       isFile: function isFile(file_name, cb) {
+        if (!job.getUserData().job_in_progress) {
+          return void cb('Job already completed');
+        }
         file_name = forwardSlashes(file_name);
         if (file_name.startsWith(base_path)) {
           // A file in our source directory, get it from the build system and
@@ -149,6 +155,9 @@ module.exports = function bundle(opts) {
         });
       },
       isDirectory: function isDirectory(file_name, cb) {
+        if (!job.getUserData().job_in_progress) {
+          return void cb('Job already completed');
+        }
         file_name = forwardSlashes(file_name);
         // This is only called for finding the node_modules folder?
         assert(file_name.indexOf('/node_modules') !== -1);
