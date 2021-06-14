@@ -1,6 +1,6 @@
 {
   "name": "glov-build-browserify",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Browserify task processor for glov-build",
   "main": "index.js",
   "keywords": [
@@ -20,7 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "@jimbly/browserify": "^0.17.0",
-    "glov-build-sourcemap": "0.0.4"
+    "glov-build-sourcemap": "0.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.14.2",
