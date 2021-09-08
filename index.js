@@ -255,5 +255,8 @@ module.exports = function bundle(opts) {
     init: bundleTaskInit,
     func: bundleTask,
     input: `${source}:${entrypoint}`,
+    version: [
+      opts,
+    ],
   };
 };

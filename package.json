@@ -1,6 +1,6 @@
 {
   "name": "glov-build-browserify",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Browserify task processor for glov-build",
   "main": "index.js",
   "keywords": [
@@ -34,6 +34,6 @@
     "rimraf": "^3.0.2"
   },
   "peerDependencies": {
-    "glov-build": ">= 0.0.25"
+    "glov-build": ">= 0.0.31"
   }
 }
