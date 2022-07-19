@@ -1,6 +1,6 @@
 {
   "name": "glov-build-browserify",
-  "version": "0.0.6",
+  "version": "1.0.6",
   "description": "Browserify task processor for glov-build",
   "main": "index.js",
   "keywords": [
@@ -20,20 +20,20 @@
   "license": "MIT",
   "dependencies": {
     "@jimbly/browserify": "^0.17.0",
-    "glov-build-sourcemap": "0.0.5"
+    "glov-build-sourcemap": "^1.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.14.2",
     "@babel/preset-env": "^7.14.2",
-    "glov-async": "0.0.1",
-    "glov-build": "0.0.25",
-    "glov-build-babel": "0.0.1",
+    "glov-async": "1.0.2",
+    "glov-build": "1.0.36",
+    "glov-build-babel": "1.0.4",
     "is-finite": "^1.0.0",
     "nodemon": "^2.0.7",
     "recursive-readdir-synchronous": "0.0.4",
     "rimraf": "^3.0.2"
   },
   "peerDependencies": {
-    "glov-build": ">= 0.0.32"
+    "glov-build": ">= 1.0.36"
   }
 }
