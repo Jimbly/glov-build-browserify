@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const sourcemap = require('glov-build-sourcemap');
 // const through = require('through2');
+const { requireStack } = require('./require_stack.js');
+
 
 function forwardSlashes(str) {
   return str.replace(/\\/g, '/');
@@ -15,7 +17,7 @@ module.exports = function bundle(opts) {
   // sourcemap: false, // defaults true
   // browserify: {}
   // post_bundle_cb: function
-  const { entrypoint, out, post_bundle_cb } = opts;
+  const { entrypoint, out, post_bundle_cb, ban_deps } = opts;
   let source = opts.source || 'source';
   let do_sourcemaps = opts.sourcemap !== false;
   let browserify_opts = { ...(opts.browserify || {}) };
@@ -182,6 +184,7 @@ module.exports = function bundle(opts) {
     let user_data = job.getUserData();
     let { b, cache } = user_data;
     let the_file = job.getFile();
+    user_data.deps = {};
     if (!b) {
       cache = {};
       user_data.cache = cache;
@@ -195,6 +198,17 @@ module.exports = function bundle(opts) {
       b = browserify(disk_path, browserify_opts);
       user_data.b = b;
       b.on('log', job.log.bind(job)); // output build logs to terminal
+      if (ban_deps) {
+        b.on('dep', (dep) => {
+          let { deps } = user_data;
+          // console.log(dep.index, dep.file, dep.deps);
+          deps[dep.index] = { file: dep.file, deps: dep.deps };
+        });
+      }
+    }
+
+    function toRelative(file) {
+      return forwardSlashes(path.relative(user_data.base_path, file));
     }
 
     let updated = job.getFilesUpdated();
@@ -217,7 +231,6 @@ module.exports = function bundle(opts) {
     //   next();
     // }));
 
-
     user_data.job_in_progress = true;
     b.bundle(function (err, buf) {
       if (!user_data.job_in_progress) {
@@ -228,6 +241,23 @@ module.exports = function bundle(opts) {
       if (err) {
         return void done(err);
       }
+
+      if (ban_deps) {
+        for (let index in user_data.deps) {
+          let dep = user_data.deps[index];
+          for (let error in ban_deps) {
+            let list = ban_deps[error];
+            for (let ii = 0; ii < list.length; ++ii) {
+              let relative = path.relative(user_data.base_path, dep.file);
+              relative = forwardSlashes(relative);
+              if (relative.match(list[ii])) {
+                job.error(`${error}: ${relative} required by ${requireStack(user_data.deps, index, toRelative)}`);
+              }
+            }
+          }
+        }
+      }
+
 
       if (post_bundle_cb) {
         buf = post_bundle_cb(buf) || buf;
