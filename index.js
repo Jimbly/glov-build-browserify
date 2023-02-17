@@ -3,12 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const sourcemap = require('glov-build-sourcemap');
 // const through = require('through2');
-const { requireStack } = require('./require_stack.js');
+const { forwardSlashes, requireStack } = require('./require_stack.js');
 
-
-function forwardSlashes(str) {
-  return str.replace(/\\/g, '/');
-}
 
 module.exports = function bundle(opts) {
   // entrypoint: 'client/app.js',
@@ -193,6 +189,7 @@ module.exports = function bundle(opts) {
       browserify_opts.persistentCache = persistentCache.bind(null, job);
 
       let disk_path = the_file.getDiskPath();
+      user_data.disk_path = disk_path;
       browserify_opts.basedir = path.dirname(disk_path);
       browserify_opts.resolve = resolveOpts(job, base_path);
       b = browserify(disk_path, browserify_opts);
@@ -251,7 +248,8 @@ module.exports = function bundle(opts) {
               let relative = path.relative(user_data.base_path, dep.file);
               relative = forwardSlashes(relative);
               if (relative.match(list[ii])) {
-                job.error(`${error}: ${relative} required by ${requireStack(user_data.deps, index, toRelative)}`);
+                job.error(`${error}: ${relative} required by` +
+                  ` ${requireStack(user_data.deps, index, user_data.disk_path, toRelative)}`);
               }
             }
           }

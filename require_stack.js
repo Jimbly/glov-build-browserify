@@ -1,56 +1,64 @@
+function forwardSlashes(str) {
+  return str.replace(/\\/g, '/');
+}
+exports.forwardSlashes = forwardSlashes;
+
 function identity(a) {
   return a;
 }
 
-exports.requireStack = function requireStack(all_deps, target_index, mapper) {
+exports.requireStack = function requireStack(all_deps, target_index, root_path, mapper) {
   mapper = mapper || identity;
-  // First, find parents
-  let parents = {};
+  target_index = String(target_index);
+  // First, find root
+  let root_idx = null;
   for (let index in all_deps) {
-    let { deps } = all_deps[index];
-    for (let key in deps) {
-      let child_idx = deps[key];
-      parents[child_idx] = parents[child_idx] || {};
-      parents[child_idx][index] = true;
+    if (forwardSlashes(all_deps[index].file) === root_path) {
+      root_idx = index;
+      break;
     }
   }
-  // Now, find shortest path to a root, or node whose parents are all already in the path
+  if (!root_idx) {
+    return 'requireStack error: unable to find root node in dependency tree while' +
+      ` looking for ${forwardSlashes(all_deps[target_index].file)} under root ${root_path}`;
+  }
+
+  // breadth-first search to find shortest path to target node
+  let done = {};
   let todo = [];
+  let answer;
   function push(idx, stack) {
+    idx = String(idx);
+    done[idx] = true;
     stack = stack.slice(0);
     stack.push(idx);
-    todo.push([idx, stack]);
-  }
-  push(String(target_index), []);
-  let answer;
-  let possible_answer;
-  function walk() {
-    let next = todo.splice(0, 1)[0];
-    let [next_idx, next_stack] = next;
-    let my_parents = [];
-    for (let parent_idx in parents[next_idx]) {
-      if (!next_stack.includes(parent_idx)) {
-        my_parents.push(parent_idx);
-      }
-    }
-    if (!my_parents.length) {
-      // found the root!
-      if (!possible_answer) {
-        possible_answer = next_stack;
-      }
-      if (next_idx === '1') { // assume 1 is the root, if we got there
-        answer = next_stack;
-      }
+    if (idx === target_index) {
+      answer = stack;
     } else {
-      for (let ii = 0; ii < my_parents.length; ++ii) {
-        push(my_parents[ii], next_stack);
+      todo.push([idx, stack]);
+    }
+  }
+  push(root_idx, []);
+  function walk() {
+    let [next_idx, next_stack] = todo.splice(0, 1)[0];
+    let deps = all_deps[next_idx].deps;
+    for (let key in deps) {
+      let idx = deps[key];
+      if (idx && !done[idx]) {
+        push(idx, next_stack);
       }
     }
   }
+  // eslint-disable-next-line no-unmodified-loop-condition
   while (!answer && todo.length) {
     walk();
   }
-  let ret = (answer || possible_answer).reverse().map((index) => mapper(all_deps[index].file)).join(' => ');
+  if (!answer) {
+    return 'requireStack error: unable path from root to target while' +
+      ` looking for ${mapper(forwardSlashes(all_deps[target_index].file))} under root ${mapper(root_path)}`;
+  }
+
+  let ret = answer.map((index) => mapper(forwardSlashes(all_deps[index].file))).join(' => ');
   // console.log(all_deps, target_index, ret);
   return ret;
 };
