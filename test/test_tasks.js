@@ -57,7 +57,6 @@ exports.registerTasks = function () {
         transform: [],
         bundleExternal: true,
       },
-      // eslint-disable-next-line arrow-body-style
       post_bundle_cb: (buf) => {
         // This super inefficient, don't do it like this, modifying the Buffer
         //   in-place is way better!
