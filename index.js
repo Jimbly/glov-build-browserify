@@ -2,6 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const sourcemap = require('glov-build-sourcemap');
+const { asyncEach } = require('glov-async');
 // const through = require('through2');
 const { forwardSlashes, requireStack } = require('./require_stack.js');
 
@@ -176,12 +177,33 @@ module.exports = function bundle(opts) {
     };
   }
 
-  function bundleTask(job, done) {
+  function bundleTaskSetupOnFirstRun(job, next) {
     let user_data = job.getUserData();
     let { b, cache } = user_data;
     let the_file = job.getFile();
     user_data.deps = {};
-    if (!b) {
+    if (b) {
+      return void next();
+    }
+    let builtins = browserify_opts.builtins || {};
+    asyncEach(Object.keys(builtins), function (key, next) {
+      let file_name = builtins[key];
+      if (file_name[0] === '.') {
+        // relative path outside of build logic (deprecated), just ignore
+        return next();
+      }
+      let file_key = `${source}:${file_name}`;
+      return job.depAdd(file_key, function (err, buildfile) {
+        if (err) {
+          return next(err);
+        }
+        browserify_opts.builtins[key] = buildfile.disk_path;
+        next();
+      });
+    }, function (err) {
+      if (err) {
+        return next(err);
+      }
       cache = {};
       user_data.cache = cache;
       let base_path = the_file.getBucketDir();
@@ -202,7 +224,13 @@ module.exports = function bundle(opts) {
           deps[dep.index] = { file: dep.file, deps: dep.deps };
         });
       }
-    }
+      next();
+    });
+  }
+
+  function bundleTaskRun(job, done) {
+    let user_data = job.getUserData();
+    let { b, cache } = user_data;
 
     function toRelative(file) {
       return forwardSlashes(path.relative(user_data.base_path, file));
@@ -278,6 +306,15 @@ module.exports = function bundle(opts) {
     });
   }
 
+  function bundleTask(job, done) {
+    bundleTaskSetupOnFirstRun(job, function (err) {
+      if (err) {
+        return done(err);
+      }
+      bundleTaskRun(job, done);
+    });
+  }
+
   return {
     type: 'single',
     init: bundleTaskInit,
@@ -285,6 +322,8 @@ module.exports = function bundle(opts) {
     input: `${source}:${entrypoint}`,
     version: [
       opts,
+      bundleTaskSetupOnFirstRun,
+      bundleTaskRun,
     ],
   };
 };

@@ -54,6 +54,9 @@ exports.registerTasks = function () {
       source: 'babel',
       out: 'client/main.bundle.js',
       browserify: {
+        builtins: {
+          _process: 'shim/process.js',
+        },
         transform: [],
         bundleExternal: true,
       },
