@@ -1,6 +1,6 @@
 {
   "name": "glov-build-browserify",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Browserify task processor for glov-build",
   "main": "index.js",
   "keywords": [
