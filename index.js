@@ -185,7 +185,9 @@ module.exports = function bundle(opts) {
     if (b) {
       return void next();
     }
-    let builtins = browserify_opts.builtins || {};
+    // Clone builtins, as we modify it below to contain absolute paths
+    let builtins = { ...(browserify_opts.builtins || {}) };
+    browserify_opts.builtins = builtins;
     asyncEach(Object.keys(builtins), function (key, next) {
       let file_name = builtins[key];
       if (file_name[0] === '.') {
